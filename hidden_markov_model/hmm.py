@@ -35,6 +35,89 @@ class HMM:
         self.symbols = symbols
         self.e_prob = e_prob
 
+    def score_edge(self, k, i, s):
+        """
+        Returns probability state k transitions to state i
+        and emits symbol s
+        :param str k: Current state
+        :param str i: Next state
+        :param str s: Emitted symbol at next state
+        :return int: Edge score
+        """
+        return self.t_prob[k][i] * self.e_prob[i][s]
+
+
+class HMMAutomaton:
+    """
+    Class that initializes HMM Automaton for
+    dynamic programming based algorithms
+    """
+    def __init__(self, hmm, emit):
+        """
+        Initializes a Manhattan style HMM graph
+        :param HMM hmm: HMM object
+        :param str emit: Emitted sequence
+        """
+        self.hmm = hmm
+        self.graph = {}
+        self.source = 1.0
+        self.sink = 0.0
+        self.emit_list = list(emit)
+
+        for state in hmm.states:
+            self.graph[state] = [0.0] * len(emit)
+            self.graph[state][0] = (self.source * hmm.i_prob[state]
+                                    * hmm.e_prob[state][self.emit_list[0]])
+
+    def viterbi(self):
+        """
+        Using the viterbi  algorithm,
+        determines most probable path for HMM
+        to output the given string
+        :return str: Most probable path
+        """
+        for i in range(1, len(self.emit_list)):
+
+            for state in self.hmm.states:
+                score_list = []
+
+                for prev_state in self.hmm.states:
+                    score_list.append(
+                        self.graph[prev_state][i - 1] * self.hmm.score_edge(
+                            prev_state, state, self.emit_list[i]))
+
+                self.graph[state][i] = max(score_list)
+
+        max_prob = 0.0
+        for f_state in self.hmm.states:
+            # curr_prob = self.graph[f_state][len(self.emit_list) - 1]
+            if max_prob < self.graph[f_state][len(self.emit_list) - 1]:
+                max_prob = self.graph[f_state][len(self.emit_list) - 1]
+                self.sink = f_state
+
+        # Backtrack
+        path = [self.sink]
+
+        curr_state = self.sink
+        curr_score = max_prob
+        curr_index = len(self.emit_list) - 1
+        while 0 < curr_index:
+            for prev_state in self.hmm.states:
+                prev_score = self.graph[prev_state][curr_index - 1]
+                prev_weight = self.hmm.score_edge(
+                    prev_state, curr_state, self.emit_list[curr_index])
+
+                if prev_score * prev_weight == curr_score:
+                    curr_state = prev_state
+                    curr_score = prev_score
+
+            path.append(curr_state)
+            curr_index -= 1
+
+        path.reverse()
+
+        return ''.join(path)
+
 
 def read_combined(parse_order, hmm_file):
     """
@@ -133,3 +216,54 @@ def read_combined(parse_order, hmm_file):
     parsed_data['e_prob'] = e_data
 
     return parsed_data
+
+
+def make_hmm(parsed_data):
+    """
+    Create HMM after reading and parsing HMM data
+    :param dict parsed_data: Parsed hmm data
+    :return: HMM object
+    """
+    return HMM(parsed_data['states'], parsed_data['i_prob'],
+               parsed_data['t_prob'], parsed_data['symbols'],
+               parsed_data['e_prob'])
+
+
+def prob_path(hmm, path):
+    """
+    Probability an hmm follows a given path
+    :param HMM hmm: HMM object
+    :param str path: Path of state transitions
+    :return int: Probability of path
+    """
+    p_list = list(path)
+    prob = 1 * hmm.i_prob[p_list[0]]
+
+    for i in range(1, len(p_list)):
+        prob = prob * hmm.t_prob[p_list[i - 1]][p_list[i]]
+    return prob
+
+
+def prob_path_emission(hmm, path, emit):
+    """
+    Find the probability a given path
+    would emit a specific outcome
+    :param HMM hmm: HMM object
+    :param str path: Path of states
+    :param str emit: Specific output
+    :return int: Probability of outcome
+    """
+    p_list = list(path)
+    e_list = list(emit)
+    prob = 1
+    for i in range(len(p_list)):
+        prob = prob * hmm.e_prob[p_list[i]][e_list[i]]
+    return prob
+
+
+def main():
+    pass
+
+
+if __name__ == '__main__':
+    main()
