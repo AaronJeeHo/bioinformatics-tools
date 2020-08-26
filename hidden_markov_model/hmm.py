@@ -71,7 +71,7 @@ class HMMAutomaton:
 
     def viterbi(self):
         """
-        Using the viterbi  algorithm,
+        Using the viterbi algorithm,
         determines most probable path for HMM
         to output the given string
         :return str: Most probable path
@@ -90,7 +90,6 @@ class HMMAutomaton:
 
         max_prob = 0.0
         for f_state in self.hmm.states:
-            # curr_prob = self.graph[f_state][len(self.emit_list) - 1]
             if max_prob < self.graph[f_state][len(self.emit_list) - 1]:
                 max_prob = self.graph[f_state][len(self.emit_list) - 1]
                 self.sink = f_state
@@ -117,6 +116,27 @@ class HMMAutomaton:
         path.reverse()
 
         return ''.join(path)
+
+    def emission_prob(self):
+        """
+        Computes probability HMM
+        emits the given sequence
+        :return int: Emission Probability
+        """
+        for i in range(1, len(self.emit_list)):
+
+            for state in self.hmm.states:
+                score_list = []
+
+                for prev_state in self.hmm.states:
+                    score_list.append(
+                        self.graph[prev_state][i - 1] * self.hmm.score_edge(
+                            prev_state, state, self.emit_list[i]))
+
+                self.graph[state][i] = sum(score_list)
+
+        return sum([self.graph[states][len(self.emit_list) - 1]
+                    for states in self.hmm.states])
 
 
 def read_combined(parse_order, hmm_file):
@@ -158,7 +178,8 @@ def read_combined(parse_order, hmm_file):
                 section.append(curr_data)
                 curr_data = []
             else:
-                curr_data.append(line.strip())
+                if line.strip() != '':
+                    curr_data.append(line.strip())
 
         if len(curr_data) < 5:
             section.append(curr_data)
@@ -262,7 +283,61 @@ def prob_path_emission(hmm, path, emit):
 
 
 def main():
-    pass
+    parser = argparse.ArgumentParser(
+        description='Predict hidden paths and sequence probabilities'
+                    ' through Hidden Markov Models')
+    parser.add_argument('hmm_file', type=str, help='File with hmm data')
+    parser.add_argument('order', type=str, help='Order to parse file data')
+    parser.add_argument('-p', '--path', type=str, help='Path HMM will follow')
+    parser.add_argument('-s', '--seq', type=str, help='Sequence HMM will emit')
+
+    hmm_action = parser.add_mutually_exclusive_group()
+    hmm_action.add_argument('-v', '--viterbi', action='store_true',
+                            help='Viterbi algorithm to find optimal path')
+
+    hmm_action.add_argument('-e', '--eprob', action='store_true',
+                            help='Probability HMM emits a sequence')
+
+    hmm_action.add_argument('-d', '--dprob', action='store_true',
+                            help='Probability HMM follows hidden path')
+
+    hmm_action.add_argument('-o', '--oprob', action='store_true',
+                            help='Probability of outcome given a path')
+    args = parser.parse_args()
+
+    is_path = False
+    is_seq = False
+
+    if args.path:
+        is_path = True
+    if args.seq:
+        is_seq = True
+
+    data = read_combined(args.order, args.hmm_file)
+    hmm = make_hmm(data)
+
+    if args.viterbi:
+        if not is_seq:
+            print('Please input emitted sequence')
+        else:
+            hmm_auto = HMMAutomaton(hmm, args.seq)
+            print(hmm_auto.viterbi())
+    elif args.eprob:
+        if not is_seq:
+            print('Please input emitted sequence')
+        else:
+            hmm_auto = HMMAutomaton(hmm, args.seq)
+            print(hmm_auto.emission_prob())
+    elif args.dprob:
+        if not is_path:
+            print('Please input Path')
+        else:
+            print(prob_path(hmm, args.path))
+    elif args.oprob:
+        if not (is_path and is_seq):
+            print('Please input path and emitted sequence')
+        else:
+            print(prob_path_emission(hmm, args.path, args.seq))
 
 
 if __name__ == '__main__':
