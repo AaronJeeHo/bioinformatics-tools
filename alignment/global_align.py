@@ -9,7 +9,7 @@ class AlignmentGraph:
     """
     Class that creates dynamic programming graph
     and handles alignment scoring through
-    Smith-Waterman algorithm
+    Needleman-Wunsch algorithm
     """
     def __init__(self, col, row, match, mis, indel):
         """
@@ -26,8 +26,8 @@ class AlignmentGraph:
         self.match = match
         self.mis = mis
         self.indel = indel
-        self.max_score = 0
-        self.max_node = None
+        self.source = (0, 0)
+        self.sink = (len(col), len(row))
 
         # fill matrix with empty rows
         for j in range(len(row) + 1):
@@ -38,12 +38,14 @@ class AlignmentGraph:
             curr_row = self.matrix[j]
 
             if j == 0:
-                for i in range(len(col) + 1):
-                    curr_row.append(0)
+                curr_row.append(0)
+                for i in range(1, len(col) + 1):
+                    curr_row.append(self.get_node(i - 1, j) + indel)
+
             else:
                 for i in range(len(col) + 1):
                     if i == 0:
-                        curr_row.append(0)
+                        curr_row.append(self.get_node(i, j - 1) + indel)
                     else:
                         scores = []  # [diag , left , up]
 
@@ -56,29 +58,20 @@ class AlignmentGraph:
                         scores.append(self.get_node(i, j - 1) + indel)
                         scores.append(self.get_node(i - 1, j) + indel)
 
-                        curr_max = max(scores)
-
-                        if curr_max > 0:
-                            curr_row.append(curr_max)
-                        else:
-                            curr_row.append(0)
-
-                        if curr_max > self.max_score:
-                            self.max_score = curr_max
-                            self.max_node = (i, j)
+                        curr_row.append(max(scores))
 
     def back_trace(self):
         """
         Backtrack and find alignment path
-        :return list: List containing [MAX SCORE, ALIGNMENT LEN,
+        :return list: List containing [SCORE, ALIGNMENT LEN,
                         COLUMN ALIGNMENT, ROW ALIGNMENT]
         """
         col_seq = []
         row_seq = []
-        curr_score = self.max_score
-        curr_node = self.max_node
+        curr_node = self.sink
+        curr_score = self.get_node(len(self.col), len(self.row))
 
-        while curr_score != 0:
+        while curr_node != self.source:
             i = curr_node[0]
             j = curr_node[1]
 
@@ -117,7 +110,8 @@ class AlignmentGraph:
         col_align = ''.join(col_seq)
         row_align = ''.join(row_seq)
 
-        return [self.max_score, len(col_align), col_align, row_align]
+        return [self.get_node(len(self.col), len(self.row)),
+                len(col_align), col_align, row_align]
 
     def get_node(self, i, j):
         """
@@ -152,9 +146,9 @@ def parse_multiseq(fasta):
     return seq_list
 
 
-def local_alignment(seq1, seq2, match, mis, indel, to_print):
+def global_alignment(seq1, seq2, match, mis, indel, to_print):
     """
-    Perform Local Alignment and output Score + length
+    Perform Global Alignment and output Score + length
     :param str seq1: DNA Sequence
     :param str seq2: DNA Sequence
     :param int match: Score value for match
@@ -174,7 +168,8 @@ def local_alignment(seq1, seq2, match, mis, indel, to_print):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Calculate optimal local alignment of two seqs')
+        description='Calculate optimal global alignment of two seqs')
+
     parser.add_argument('sequence_file', help='Input sequence file')
     parser.add_argument('-m', '--match', type=int, help='Match value')
     parser.add_argument('-s', '--mismatch', type=int,
@@ -193,7 +188,7 @@ def main():
     seq1 = seq_list[0]
     seq2 = seq_list[1]
 
-    local_alignment(seq1, seq2, match, mis, indel, to_print)
+    global_alignment(seq1, seq2, match, mis, indel, to_print)
 
 
 if __name__ == '__main__':
