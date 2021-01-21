@@ -21,6 +21,9 @@ A collection of useful algorithms and scripts written for bioinformatics and gen
     - [hmm.py](#hmmpy)
 - [Pattern Matching](#Pattern-Matching)
     - [aho-corasick.py](#aho-corasickpy)
+- [Rna SeqTools](#RNA-SeqTools)
+    - [quality_control.py](#quality_controlpy)
+    - [quantify_exp.py](#quantify_exppy)
 - [Seq Tools](#Seq-Tools)
     - [dna_map.py](#dna_mappy)
     - [orf_finder.py](#orf_finderpy)  
@@ -166,6 +169,7 @@ Optional Arguments
         - Sequence data denoted as tuple containing (Sequence, Quality Scores)
 
 
+
 <br/><br/>
 ## Hidden Markov Model
 Programs for predicting hidden states and probabilities in a sequence using Hidden Markov Models
@@ -268,6 +272,23 @@ Required Arguments
 - -o / --output: Name for output files
     - "output".tsv: Tab-separated file containing matched reads, start index, and end index
     - "output"_stats.tsv: Tab-separated file containing Expected vs Actual matches in total and per read
+
+
+
+<br/><br/>
+## RNA SeqTools 
+(WIP)
+Tools for RNA Seq Analysis
+
+&nbsp;
+### quality_control.py
+Programs that use scanpy to perform various QC control on scRNA-Seq data
+
+
+&nbsp;
+### quantify_exp.py
+Programs that perform expression metrics such as RPKM and TPM
+
 
 
 <br/><br/>
